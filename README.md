@@ -1,6 +1,6 @@
-# Pokémon SoulGold Save Editor (Web & Desktop)
+# Pokémon SoulGold Save Editor
 
-A powerful, modern save editor for **Pokémon SoulGold** (GBA ROM hack v1.1 & v1.1.3) built with pure Python and a sleek browser interface inspired by **pkmds.app**.
+A powerful, modern save editor for **Pokémon SoulGold** (GBA ROM hack v1.1 & v1.1.3) built with pure Python and a sleek browser interface.
 
 ![UI Preview](soulgold_icon.png)
 
@@ -24,59 +24,3 @@ A powerful, modern save editor for **Pokémon SoulGold** (GBA ROM hack v1.1 & v1
 
 ---
 
-## 🚀 Quick Start (Local)
-
-### 1. Launch Web App
-```bash
-python3 soulgold_web_server.py
-```
-Or use the launcher:
-```bash
-python3 soulgold_editor.py --web
-```
-Open your browser at `http://localhost:8080`.
-
-### 2. Launch Desktop GUI (Tkinter)
-```bash
-python3 soulgold_editor.py
-```
-
----
-
-## ☁️ Deploy to Render.com (1-Click Hosting)
-
-You can host this web application online for free on [Render.com](https://render.com) so you and your friends can access it anywhere from phone, tablet, or PC!
-
-### Step 1: Push to GitHub (`jozeton-app`)
-1. Create a new repository on GitHub under [https://github.com/jozeton-app](https://github.com/jozeton-app) (e.g. `soulgold-save-editor`).
-2. Link and push your code:
-   ```bash
-   git remote add origin https://github.com/jozeton-app/<your-repo-name>.git
-   git branch -M main
-   git push -u origin main
-   ```
-
-### Step 2: Create Web Service on Render
-1. Go to [dashboard.render.com](https://dashboard.render.com/) and click **New +** → **Web Service**.
-2. Connect your GitHub repository (`jozeton-app/<your-repo-name>`).
-3. Fill in the settings:
-   - **Name**: `soulgold-save-editor` (or your choice)
-   - **Runtime**: `Python 3` (or `Docker`)
-   - **Build Command**: `pip install -r requirements.txt` (or leave empty)
-   - **Start Command**: `python3 soulgold_web_server.py --host 0.0.0.0 --port $PORT --no-browser`
-   - **Instance Type**: `Free`
-4. Click **Deploy Web Service**!
-
-Render will build and deploy the editor within 60 seconds, giving you a free, public HTTPS URL (e.g. `https://soulgold-save-editor.onrender.com`) with full file upload and download support!
-
----
-
-## Testing
-
-Run the automated test suite:
-```bash
-python3 -m unittest discover -s .
-```
-
-## License
-MIT License
