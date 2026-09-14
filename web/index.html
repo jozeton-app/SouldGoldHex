@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon SoulGold - Web Save Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0f1117;
+      --bg-surface: #181b24;
+      --bg-card: #202431;
+      --bg-card-hover: #282d3e;
+      --border-color: #2e3547;
+      --text-main: #f0f3fa;
+      --text-muted: #8b95a5;
+      --accent-gold: #e5a93c;
+      --accent-gold-glow: rgba(229, 169, 60, 0.25);
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #e5a93c, #f59e0b);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #111;
+      box-shadow: 0 0 15px var(--accent-gold-glow);
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+    .version-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .save-selector {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+    .save-selector:focus {
+      border-color: var(--accent-gold);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      transition: all 0.15s ease;
+    }
+    .btn-primary {
+      background: var(--accent-gold);
+      color: #111;
+    }
+    .btn-primary:hover {
+      background: #f59e0b;
+      box-shadow: 0 0 12px var(--accent-gold-glow);
+    }
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: #4a5568;
+    }
+    .btn-success {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .btn-success:hover {
+      background: rgba(16, 185, 129, 0.3);
+    }
+
+    /* Container & Tabs */
+    .app-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: var(--bg-surface);
+    }
+    .tab-btn.active {
+      color: var(--accent-gold);
+      background: var(--bg-card);
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Banner info */
+    .alert-banner {
+      background: rgba(229, 169, 60, 0.1);
+      border: 1px solid rgba(229, 169, 60, 0.3);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #ffd885;
+    }
+
+    /* Grid & Cards */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-control {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .form-control:focus {
+      border-color: var(--accent-gold);
+    }
+
+    /* Party Cards */
+    .party-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .party-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .party-card:hover {
+      background: var(--bg-card-hover);
+      border-color: #4a5568;
+    }
+    .party-card.selected {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 16px var(--accent-gold-glow);
+    }
+    .party-card-slot {
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .party-card-shiny {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      color: var(--accent-gold);
+      font-size: 14px;
+    }
+    .party-card-sprite {
+      width: 68px;
+      height: 68px;
+      margin: 4px auto;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .party-card-name {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .party-card-lvl {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .hp-bar-bg {
+      background: #111;
+      height: 5px;
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .hp-bar-fill {
+      background: var(--accent-green);
+      height: 100%;
+      border-radius: 3px;
+      width: 100%;
+    }
+
+    /* Mon Detail Editor */
+    .mon-editor-layout {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr;
+      gap: 20px;
+    }
+    @media (max-width: 860px) {
+      .mon-editor-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* PC Storage & Box View */
+    .storage-mode-nav {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .storage-mode-btn {
+      padding: 9px 22px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .storage-mode-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+    }
+    .storage-mode-btn.active {
+      background: var(--accent-gold);
+      color: #111;
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 12px var(--accent-gold-glow);
+    }
+    .box-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .box-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .box-select {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      outline: none;
+      cursor: pointer;
+    }
+    .box-grid-30 {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .box-grid-30 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    @media (max-width: 550px) {
+      .box-grid-30 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .box-slot {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+      min-height: 96px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .box-slot:hover {
+      background: var(--bg-card-hover);
+      border-color: #555;
+      transform: translateY(-2px);
+    }
+    .box-slot.selected {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 14px var(--accent-gold-glow);
+      background: rgba(229, 169, 60, 0.08);
+    }
+    .box-slot.empty {
+      border: 1px dashed rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.01);
+      color: var(--text-muted);
+    }
+    .box-slot.empty:hover {
+      border-color: var(--accent-gold);
+      background: rgba(229, 169, 60, 0.04);
+    }
+    .box-slot-num {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .box-slot-shiny {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      color: var(--accent-gold);
+      font-size: 12px;
+    }
+    .box-slot-sprite {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .box-slot-name {
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      margin-top: 2px;
+    }
+    .box-slot-lvl {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Stat Sliders */
+    .stat-row {
+      display: grid;
+      grid-template-columns: 70px 1fr 45px;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .stat-row input[type="range"] {
+      accent-color: var(--accent-gold);
+      cursor: pointer;
+    }
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      text-align: right;
+      color: var(--accent-gold);
+    }
+
+    /* Bag Table */
+    .pocket-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .pocket-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .pocket-btn.active {
+      background: var(--accent-gold);
+      color: #111;
+      border-color: var(--accent-gold);
+    }
+    .bag-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .bag-table th {
+      text-align: left;
+      padding: 8px 12px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .bag-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .qty-input {
+      width: 70px;
+      padding: 4px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+      z-index: 100;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .drop-zone {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .drop-zone.dragover {
+      border-color: var(--accent-gold);
+      background: rgba(229, 169, 60, 0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">★</div>
+      <div>
+        <div class="brand-title">Pokémon SoulGold Save Editor</div>
+      </div>
+      <div id="versionBadge" class="version-pill">Detecting...</div>
+    </div>
+
+    <div class="header-center">
+      <label style="font-size:12px; color:var(--text-muted)">Active Save:</label>
+      <select id="saveSelector" class="save-selector" onchange="onSelectSave(this.value)">
+        <option>Loading saves...</option>
+      </select>
+      <button class="btn btn-secondary" onclick="document.getElementById('headerImportInput').click()" title="Import any .sav file from your computer">
+        📁 Import Save...
+      </button>
+      <input type="file" id="headerImportInput" accept=".sav" style="display:none;" onchange="handleImportFile(this.files[0])">
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="downloadSave()">⬇️ Download .sav</button>
+      <button class="btn btn-primary" onclick="saveToDisk()">💾 Save to Disk</button>
+    </div>
+  </header>
+
+  <div class="app-container">
+
+    <div id="blankWarning" class="alert-banner" style="display:none;">
+      <span>⚠️ This save file is currently blank (uninitialized flash). Would you like to clone your active adventure from v1.1?</span>
+      <button class="btn btn-primary" onclick="cloneToV113()" style="padding:4px 10px; font-size:12px;">Clone from v1.1</button>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="showTab('trainer', this)">Trainer</button>
+      <button class="tab-btn" onclick="showTab('party', this)">Pokémon (Party & PC)</button>
+      <button class="tab-btn" onclick="showTab('bag', this)">Bag & Inventory</button>
+      <button class="tab-btn" onclick="showTab('migration', this)">Save Files & Import</button>
+    </nav>
+
+    <!-- Tab 1: Trainer -->
+    <div id="tab-trainer" class="tab-content active">
+      <div class="card">
+        <div class="card-title">Trainer Profile</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Trainer Name</label>
+            <input type="text" id="tr_name" class="form-control" maxlength="7" onchange="updateTrainer()">
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="tr_gender" class="form-control" onchange="updateTrainer()">
+              <option value="Boy">Boy</option>
+              <option value="Girl">Girl</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Trainer ID (TID)</label>
+            <input type="number" id="tr_tid" class="form-control" min="0" max="65535" onchange="updateTrainer()">
+          </div>
+          <div class="form-group">
+            <label>Secret ID (SID)</label>
+            <input type="number" id="tr_sid" class="form-control" min="0" max="65535" onchange="updateTrainer()">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Finances & Play Time</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Money (₽)</label>
+            <input type="number" id="tr_money" class="form-control" min="0" max="999999" onchange="updateTrainer()">
+          </div>
+          <div class="form-group">
+            <label>Game Corner Coins</label>
+            <input type="number" id="tr_coins" class="form-control" min="0" max="9999" onchange="updateTrainer()">
+          </div>
+          <div class="form-group">
+            <label>Play Time (Hours / Mins / Secs)</label>
+            <div style="display:flex; gap:6px;">
+              <input type="number" id="tr_hours" class="form-control" min="0" max="999" style="width:70px;" onchange="updateTrainer()">
+              <input type="number" id="tr_mins" class="form-control" min="0" max="59" style="width:70px;" onchange="updateTrainer()">
+              <input type="number" id="tr_secs" class="form-control" min="0" max="59" style="width:70px;" onchange="updateTrainer()">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Party & PC Storage -->
+    <div id="tab-party" class="tab-content">
+      <!-- Storage View Toggle (Party vs PC Boxes) -->
+      <div class="storage-mode-nav">
+        <button id="viewPartyBtn" class="storage-mode-btn active" onclick="switchStorageMode('party')">👥 Party Pokémon (6)</button>
+        <button id="viewBoxesBtn" class="storage-mode-btn" onclick="switchStorageMode('boxes')">📦 PC Storage (14 Boxes / 420 Slots)</button>
+      </div>
+
+      <!-- View 1: Party (6 slots) -->
+      <div id="partyViewSection">
+        <div class="party-grid" id="partySlotsContainer">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- View 2: PC Boxes (30 slots) -->
+      <div id="boxesViewSection" style="display:none;">
+        <div class="box-toolbar">
+          <div class="box-nav-group">
+            <button class="btn btn-secondary" onclick="prevBox()" title="Previous Box">◀ Prev</button>
+            <select id="boxSelect" class="box-select" onchange="onSelectBox(this.value)">
+              <!-- Rendered dynamically -->
+            </select>
+            <button class="btn btn-secondary" onclick="nextBox()" title="Next Box">Next ▶</button>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size:12px; color:var(--text-muted); font-weight:600;">Box Name:</label>
+            <input type="text" id="boxNameInput" class="form-control" style="width:140px; padding:6px 10px;" maxlength="8" onchange="updateCurrentBoxName(this.value)" placeholder="Box Name">
+          </div>
+        </div>
+
+        <div class="box-grid-30" id="boxSlotsContainer">
+          <!-- 30 slots rendered dynamically -->
+        </div>
+      </div>
+
+      <div class="card" id="monEditorCard">
+        <div class="card-title" id="monEditorTitle">Editing Slot #1</div>
+        <div class="mon-editor-layout">
+          <div>
+            <div class="form-grid" style="margin-bottom:16px;">
+              <div class="form-group">
+                <label>Species</label>
+                <select id="mon_species" class="form-control" onchange="saveCurrentMon()"></select>
+              </div>
+              <div class="form-group">
+                <label>Nickname</label>
+                <input type="text" id="mon_nickname" class="form-control" maxlength="10" onchange="saveCurrentMon()">
+              </div>
+              <div class="form-group">
+                <label>Level</label>
+                <input type="number" id="mon_level" class="form-control" min="1" max="100" onchange="saveCurrentMon()">
+              </div>
+              <div class="form-group" style="justify-content: center;">
+                <label>Shiny Status</label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:#ffd885; margin-top:6px;">
+                  <input type="checkbox" id="mon_shiny" style="width:18px; height:18px; accent-color:var(--accent-gold);" onchange="saveCurrentMon()">
+                  <span>★ Shiny Pokémon</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-grid" style="margin-bottom:16px;">
+              <div class="form-group">
+                <label>Nature</label>
+                <select id="mon_nature" class="form-control" onchange="saveCurrentMon()"></select>
+              </div>
+              <div class="form-group">
+                <label>Tera Type</label>
+                <select id="mon_tera" class="form-control" onchange="saveCurrentMon()"></select>
+              </div>
+              <div class="form-group">
+                <label>Held Item</label>
+                <select id="mon_item" class="form-control" onchange="saveCurrentMon()"></select>
+              </div>
+              <div class="form-group">
+                <label>Pokéball</label>
+                <select id="mon_ball" class="form-control" onchange="saveCurrentMon()"></select>
+              </div>
+            </div>
+
+            <div style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">Moves & PP</div>
+            <div class="form-grid" style="margin-bottom:16px;">
+              <div class="form-group" style="grid-column: span 2;">
+                <div style="display:flex; gap:8px;">
+                  <select id="mon_move_0" class="form-control" style="flex:1;" onchange="saveCurrentMon()"></select>
+                  <input type="number" id="mon_pp_0" class="form-control" style="width:70px;" placeholder="PP" onchange="saveCurrentMon()">
+                </div>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <div style="display:flex; gap:8px;">
+                  <select id="mon_move_1" class="form-control" style="flex:1;" onchange="saveCurrentMon()"></select>
+                  <input type="number" id="mon_pp_1" class="form-control" style="width:70px;" placeholder="PP" onchange="saveCurrentMon()">
+                </div>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <div style="display:flex; gap:8px;">
+                  <select id="mon_move_2" class="form-control" style="flex:1;" onchange="saveCurrentMon()"></select>
+                  <input type="number" id="mon_pp_2" class="form-control" style="width:70px;" placeholder="PP" onchange="saveCurrentMon()">
+                </div>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <div style="display:flex; gap:8px;">
+                  <select id="mon_move_3" class="form-control" style="flex:1;" onchange="saveCurrentMon()"></select>
+                  <input type="number" id="mon_pp_3" class="form-control" style="width:70px;" placeholder="PP" onchange="saveCurrentMon()">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- IV / EV Panel -->
+          <div style="background:var(--bg-card); padding:16px; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-weight:700; font-size:14px;">Individual Values (IVs)</span>
+              <button class="btn btn-secondary" style="padding:3px 8px; font-size:11px;" onclick="maxSelectedMonIVs()">All 31s</button>
+            </div>
+            <div id="ivControls"></div>
+
+            <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-weight:700; font-size:14px;">Effort Values (EVs)</span>
+              <span id="evTotalBadge" style="font-size:11px; color:var(--text-muted)">Total: 0/510</span>
+            </div>
+            <div id="evControls"></div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-color);">
+          <button class="btn btn-secondary" onclick="resetCurrentSlot()">↺ Discard / Reset</button>
+          <button class="btn btn-primary" style="padding:10px 24px; font-weight:700;" onclick="saveCurrentMon(true)">💾 Save Pokémon Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Bag -->
+    <div id="tab-bag" class="tab-content">
+      <div class="card">
+        <div class="card-title">Bag Pockets</div>
+        <div class="pocket-selector" id="pocketSelector"></div>
+
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <select id="bagAddItemSelect" class="form-control" style="flex:1;"></select>
+          <input type="number" id="bagAddItemQty" class="form-control" style="width:80px;" value="1" min="1" max="999">
+          <button class="btn btn-primary" onclick="addBagItem()">+ Add Item</button>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <button class="btn btn-secondary" onclick="giveItemPreset('Rare Candy', 99)">+99 Rare Candies</button>
+          <button class="btn btn-secondary" onclick="giveItemPreset('Master Ball', 99)">+99 Master Balls</button>
+          <button class="btn btn-secondary" onclick="giveItemPreset('Max Revive', 99)">+99 Max Revives</button>
+        </div>
+
+        <table class="bag-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th style="width:120px;">Quantity</th>
+              <th style="width:80px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="bagTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 4: Save Files & Import -->
+    <div id="tab-migration" class="tab-content">
+      <div class="card">
+        <div class="card-title">Import & Edit Any Save File</div>
+        <p style="font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+          Import any <code>.sav</code> file from your computer (e.g. from your emulator directory, Downloads, or external drive) to view and edit party Pokémon, IVs/EVs, moves, trainer information, and bag items.
+        </p>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileUploadInput').click()" style="padding:28px; margin-bottom:16px;">
+          <div style="font-size:32px; margin-bottom:8px;">📥</div>
+          <p style="font-size:15px; font-weight:600; color:var(--text-main); margin-bottom:4px;">Drag & Drop a .sav file here</p>
+          <p style="font-size:12px; color:var(--text-muted);">or click anywhere in this box to browse your computer</p>
+          <input type="file" id="fileUploadInput" accept=".sav" style="display:none;" onchange="handleImportFile(this.files[0])">
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('fileUploadInput').click()">📁 Choose .sav File to Import</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">SoulGold Version Sync & Migration (v1.1 ➔ v1.1.3)</div>
+        <p style="font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+          If you have updated your ROM to <strong>SoulGold v1.1.3</strong>, the emulator may have created an uninitialized <code>Soulgold (v1.1.3).sav</code>.
+          Use the button below to migrate your trainer, party Pokémon, bag items, and progress directly into v1.1.3 with 100% valid flash sector checksums.
+        </p>
+        <button class="btn btn-secondary" onclick="cloneToV113()">🚀 Clone Active Save to SoulGold v1.1.3</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    let appData = null;
+    let currentStorageMode = "party"; // "party" or "boxes"
+    let selectedPartySlot = 0;
+    let currentBoxIndex = 0;
+    let selectedBoxSlot = 0;
+    let currentBoxMons = [];
+    let currentPocket = "Items";
+
+    const STATS = ["hp", "attack", "defense", "speed", "sp_attack", "sp_defense"];
+    const STAT_LABELS = { hp: "HP", attack: "Atk", defense: "Def", speed: "Spe", sp_attack: "SpA", sp_defense: "SpD" };
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      setTimeout(() => { t.style.display = "none"; }, 3000);
+    }
+
+    function showTab(tabId, el) {
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("tab-" + tabId).classList.add("active");
+      if (el) el.classList.add("active");
+    }
+
+    async function fetchStatus() {
+      const res = await fetch("/api/status");
+      const data = await res.json();
+      
+      const sel = document.getElementById("saveSelector");
+      sel.innerHTML = "";
+      let found = false;
+      data.available_saves.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.path;
+        opt.textContent = `${s.label}: ${s.name}`;
+        if (s.path === data.current_save.path) {
+          opt.selected = true;
+          found = true;
+        }
+        sel.appendChild(opt);
+      });
+
+      if (!found && data.current_save.filename) {
+        const opt = document.createElement("option");
+        opt.value = data.current_save.path;
+        opt.textContent = `📁 [Imported]: ${data.current_save.filename}`;
+        opt.selected = true;
+        sel.insertBefore(opt, sel.firstChild);
+      }
+
+      document.getElementById("versionBadge").textContent = data.current_save.version || "SoulGold";
+      document.getElementById("blankWarning").style.display = data.current_save.is_blank_flash ? "flex" : "none";
+    }
+
+    async function loadData() {
+      const res = await fetch("/api/data");
+      appData = await res.json();
+      renderUI();
+    }
+
+    function renderUI() {
+      if (!appData) return;
+
+      // Populate Trainer
+      document.getElementById("tr_name").value = appData.trainer.name || "";
+      document.getElementById("tr_gender").value = appData.trainer.gender || "Boy";
+      document.getElementById("tr_tid").value = appData.trainer.tid || 0;
+      document.getElementById("tr_sid").value = appData.trainer.sid || 0;
+      document.getElementById("tr_money").value = appData.trainer.money || 0;
+      document.getElementById("tr_coins").value = appData.trainer.coins || 0;
+      document.getElementById("tr_hours").value = appData.trainer.hours || 0;
+      document.getElementById("tr_mins").value = appData.trainer.minutes || 0;
+      document.getElementById("tr_secs").value = appData.trainer.seconds || 0;
+
+      // Populate Box selector dropdown
+      populateBoxDropdown();
+
+      // Render Party Slots
+      renderPartySlots();
+
+      // Render Metadata Selectors if first time
+      populateDropdowns();
+
+      // Render Bag
+      renderPocketSelector();
+      renderBagTable();
+
+      // Select initial slot
+      if (currentStorageMode === 'party') {
+        if (appData.party && appData.party.length > 0) {
+          selectPartySlot(selectedPartySlot);
+        }
+      } else {
+        loadBox(currentBoxIndex);
+      }
+    }
+
+    function switchStorageMode(mode) {
+      currentStorageMode = mode;
+      document.getElementById("viewPartyBtn").classList.toggle("active", mode === "party");
+      document.getElementById("viewBoxesBtn").classList.toggle("active", mode === "boxes");
+      document.getElementById("partyViewSection").style.display = mode === "party" ? "block" : "none";
+      document.getElementById("boxesViewSection").style.display = mode === "boxes" ? "block" : "none";
+
+      if (mode === "boxes") {
+        loadBox(currentBoxIndex);
+      } else {
+        renderPartySlots();
+        selectPartySlot(selectedPartySlot);
+      }
+    }
+
+    function populateBoxDropdown() {
+      const bSel = document.getElementById("boxSelect");
+      if (!bSel || !appData || !appData.storage) return;
+      bSel.innerHTML = "";
+      const names = appData.storage.box_names || [];
+      for (let i = 0; i < 14; i++) {
+        const opt = document.createElement("option");
+        opt.value = i;
+        const bName = names[i] || `Box ${i + 1}`;
+        opt.textContent = `Box ${i + 1}: ${bName}`;
+        if (i === currentBoxIndex) opt.selected = true;
+        bSel.appendChild(opt);
+      }
+    }
+
+    async function loadBox(boxIdx) {
+      currentBoxIndex = Math.max(0, Math.min(13, boxIdx));
+      populateBoxDropdown();
+      try {
+        const res = await fetch(`/api/box?idx=${currentBoxIndex}`);
+        const data = await res.json();
+        currentBoxMons = data.pokemon || [];
+
+        const nameInput = document.getElementById("boxNameInput");
+        if (nameInput) {
+          nameInput.value = data.name || `Box ${currentBoxIndex + 1}`;
+        }
+
+        renderBoxSlots();
+        selectBoxSlot(selectedBoxSlot);
+      } catch (err) {
+        console.error("Failed to load box:", err);
+      }
+    }
+
+    function onSelectBox(val) {
+      loadBox(parseInt(val) || 0);
+    }
+
+    function prevBox() {
+      loadBox((currentBoxIndex - 1 + 14) % 14);
+    }
+
+    function nextBox() {
+      loadBox((currentBoxIndex + 1) % 14);
+    }
+
+    async function updateCurrentBoxName(val) {
+      const name = val.trim();
+      if (!name) return;
+      try {
+        const res = await fetch("/api/set-box-name", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: jsonBody({ box: currentBoxIndex, name })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (appData && appData.storage && appData.storage.box_names) {
+            appData.storage.box_names[currentBoxIndex] = data.name;
+          }
+          populateBoxDropdown();
+          showToast(`Renamed Box ${currentBoxIndex + 1} to "${data.name}"`);
+        }
+      } catch (err) {
+        console.error("Box rename error:", err);
+      }
+    }
+
+    function populateDropdowns() {
+      const meta = appData.metadata;
+      fillSelect("mon_species", meta.species.map(s => s.name));
+      fillSelect("mon_nature", meta.natures);
+      fillSelect("mon_tera", meta.tera_types);
+      fillSelect("mon_item", meta.items.map(i => i.name));
+      fillSelect("mon_ball", meta.pokeballs.map(b => b.name));
+
+      for (let i = 0; i < 4; i++) {
+        fillSelect(`mon_move_${i}`, ["None", ...meta.moves.map(m => m.name)]);
+      }
+
+      fillSelect("bagAddItemSelect", meta.items.map(i => i.name));
+    }
+
+    function fillSelect(id, items) {
+      const el = document.getElementById(id);
+      if (!el || el.options.length > 1) return;
+      el.innerHTML = "";
+      items.forEach(it => {
+        const opt = document.createElement("option");
+        opt.value = it;
+        opt.textContent = it;
+        el.appendChild(opt);
+      });
+    }
+
+    function getSpriteUrl(speciesName, isShiny) {
+      const clean = speciesName.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const shinyPrefix = isShiny ? "shiny/" : "";
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${shinyPrefix}${getSpeciesId(speciesName)}.png`;
+    }
+
+    function getSpeciesId(name) {
+      const match = appData.metadata.species.find(s => s.name.toLowerCase() === name.toLowerCase());
+      return match ? match.id : 1;
+    }
+
+    function renderPartySlots() {
+      const cont = document.getElementById("partySlotsContainer");
+      if (!cont) return;
+      cont.innerHTML = "";
+
+      appData.party.forEach((mon, idx) => {
+        const card = document.createElement("div");
+        card.className = `party-card ${idx === selectedPartySlot ? 'selected' : ''}`;
+        card.onclick = () => selectPartySlot(idx);
+
+        const hpPct = mon.max_hp > 0 ? Math.min(100, Math.round((mon.hp / mon.max_hp) * 100)) : 100;
+        const spriteUrl = getSpriteUrl(mon.species_name, mon.is_shiny);
+
+        card.innerHTML = `
+          <span class="party-card-slot">#${idx + 1}</span>
+          ${mon.is_shiny ? '<span class="party-card-shiny">★</span>' : ''}
+          <img class="party-card-sprite" src="${spriteUrl}" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'" alt="${mon.species_name}">
+          <div class="party-card-name">${mon.nickname || mon.species_name}</div>
+          <div class="party-card-lvl">Lv. ${mon.level} • ${mon.species_name}</div>
+          <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${hpPct}%"></div></div>
+        `;
+        cont.appendChild(card);
+      });
+    }
+
+    function renderBoxSlots() {
+      const cont = document.getElementById("boxSlotsContainer");
+      if (!cont) return;
+      cont.innerHTML = "";
+
+      for (let s = 0; s < 30; s++) {
+        const mon = currentBoxMons[s] || { species_id: 0, species_name: "None" };
+        const isOccupied = mon.species_id > 0;
+        const isSelected = (s === selectedBoxSlot);
+
+        const card = document.createElement("div");
+        card.className = `box-slot ${isOccupied ? '' : 'empty'} ${isSelected ? 'selected' : ''}`;
+        card.onclick = () => selectBoxSlot(s);
+
+        if (isOccupied) {
+          const spriteUrl = getSpriteUrl(mon.species_name, mon.is_shiny);
+          card.innerHTML = `
+            <span class="box-slot-num">#${s + 1}</span>
+            ${mon.is_shiny ? '<span class="box-slot-shiny">★</span>' : ''}
+            <img class="box-slot-sprite" src="${spriteUrl}" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'" alt="${mon.species_name}">
+            <div class="box-slot-name">${mon.nickname || mon.species_name}</div>
+            <div class="box-slot-lvl">Lv. ${mon.level}</div>
+          `;
+        } else {
+          card.innerHTML = `
+            <span class="box-slot-num">#${s + 1}</span>
+            <div style="font-size:20px; opacity:0.3; margin:4px 0;">+</div>
+            <div class="box-slot-lvl" style="color:var(--text-muted)">Empty</div>
+          `;
+        }
+        cont.appendChild(card);
+      }
+    }
+
+    function selectPartySlot(idx) {
+      selectedPartySlot = idx;
+      renderPartySlots();
+      const mon = appData.party[idx];
+      populateMonEditor(mon, `Party Slot #${idx + 1}`);
+    }
+
+    function selectBoxSlot(idx) {
+      selectedBoxSlot = idx;
+      renderBoxSlots();
+      const mon = currentBoxMons[idx] || createEmptyMonData();
+      const bName = (appData && appData.storage && appData.storage.box_names && appData.storage.box_names[currentBoxIndex]) || `Box ${currentBoxIndex + 1}`;
+      populateMonEditor(mon, `${bName} Slot #${idx + 1}`);
+    }
+
+    function createEmptyMonData() {
+      return {
+        species_id: 0,
+        species_name: "Bulbasaur",
+        nickname: "",
+        level: 5,
+        experience: 125,
+        is_shiny: false,
+        nature: "Hardy",
+        tera_type: "Normal",
+        held_item_name: "None",
+        pokeball_name: "Poke Ball",
+        moves: [{ name: "Tackle", pp: 35 }, { name: "None", pp: 0 }, { name: "None", pp: 0 }, { name: "None", pp: 0 }],
+        ivs: { hp: 31, attack: 31, defense: 31, speed: 31, sp_attack: 31, sp_defense: 31 },
+        evs: { hp: 0, attack: 0, defense: 0, speed: 0, sp_attack: 0, sp_defense: 0 }
+      };
+    }
+
+    function getCurrentMon() {
+      if (currentStorageMode === 'party') {
+        return appData.party[selectedPartySlot];
+      } else {
+        if (!currentBoxMons[selectedBoxSlot]) {
+          currentBoxMons[selectedBoxSlot] = createEmptyMonData();
+        }
+        return currentBoxMons[selectedBoxSlot];
+      }
+    }
+
+    function resetCurrentSlot() {
+      if (currentStorageMode === 'party') {
+        selectPartySlot(selectedPartySlot);
+      } else {
+        selectBoxSlot(selectedBoxSlot);
+      }
+    }
+
+    function populateMonEditor(mon, label) {
+      if (!mon) return;
+
+      const titleName = (mon.species_id > 0) ? (mon.nickname || mon.species_name) : "(Empty Slot)";
+      document.getElementById("monEditorTitle").textContent = `Editing ${label}: ${titleName}`;
+      document.getElementById("mon_species").value = mon.species_name || "Bulbasaur";
+      document.getElementById("mon_nickname").value = mon.nickname || "";
+      document.getElementById("mon_level").value = mon.level || 5;
+      document.getElementById("mon_shiny").checked = !!mon.is_shiny;
+      document.getElementById("mon_nature").value = mon.nature || "Hardy";
+      document.getElementById("mon_tera").value = mon.tera_type || "Normal";
+      document.getElementById("mon_item").value = mon.held_item_name || "None";
+      document.getElementById("mon_ball").value = mon.pokeball_name || "Poke Ball";
+
+      for (let i = 0; i < 4; i++) {
+        const mv = (mon.moves && mon.moves[i]) || { name: "None", pp: 0 };
+        document.getElementById(`mon_move_${i}`).value = mv.name;
+        document.getElementById(`mon_pp_${i}`).value = mv.pp;
+      }
+
+      // Render IV sliders
+      const ivCont = document.getElementById("ivControls");
+      ivCont.innerHTML = "";
+      STATS.forEach(st => {
+        const val = (mon.ivs && mon.ivs[st] !== undefined) ? mon.ivs[st] : 31;
+        const row = document.createElement("div");
+        row.className = "stat-row";
+        row.innerHTML = `
+          <label style="color:var(--text-muted)">${STAT_LABELS[st]}</label>
+          <input type="range" min="0" max="31" value="${val}"
+            oninput="document.getElementById('iv_lbl_${st}').textContent = this.value; getCurrentMon().ivs['${st}'] = parseInt(this.value);"
+            onchange="saveCurrentMon(false)">
+          <span class="stat-val" id="iv_lbl_${st}">${val}</span>
+        `;
+        ivCont.appendChild(row);
+      });
+
+      // Render EV sliders
+      renderEvControls();
+    }
+
+    function renderEvControls() {
+      const mon = getCurrentMon();
+      const evCont = document.getElementById("evControls");
+      evCont.innerHTML = "";
+
+      let totalEvs = 0;
+      STATS.forEach(st => {
+        const val = (mon && mon.evs && mon.evs[st] !== undefined) ? mon.evs[st] : 0;
+        totalEvs += val;
+        const row = document.createElement("div");
+        row.className = "stat-row";
+        row.innerHTML = `
+          <label style="color:var(--text-muted)">${STAT_LABELS[st]}</label>
+          <input type="range" min="0" max="252" value="${val}"
+            oninput="onEvSlide('${st}', this.value)"
+            onchange="saveCurrentMon(false)">
+          <span class="stat-val" id="ev_lbl_${st}">${val}</span>
+        `;
+        evCont.appendChild(row);
+      });
+
+      document.getElementById("evTotalBadge").textContent = `Total: ${totalEvs}/510`;
+    }
+
+    function onEvSlide(st, val) {
+      const mon = getCurrentMon();
+      if (!mon.evs) mon.evs = {};
+      mon.evs[st] = parseInt(val);
+      document.getElementById(`ev_lbl_${st}`).textContent = val;
+      let total = 0;
+      STATS.forEach(s => { total += (mon.evs[s] || 0); });
+      document.getElementById("evTotalBadge").textContent = `Total: ${total}/510`;
+    }
+
+    function maxSelectedMonIVs() {
+      const mon = getCurrentMon();
+      if (!mon.ivs) mon.ivs = {};
+      STATS.forEach(st => {
+        mon.ivs[st] = 31;
+        const el = document.getElementById(`iv_lbl_${st}`);
+        if (el) el.textContent = 31;
+      });
+      saveCurrentMon(true);
+      showToast("Maxed all IVs to 31!");
+    }
+
+    async function saveCurrentMon(notify = false) {
+      const mon = getCurrentMon();
+      if (!mon) return;
+
+      mon.species_name = document.getElementById("mon_species").value;
+      mon.nickname = document.getElementById("mon_nickname").value;
+      mon.level = parseInt(document.getElementById("mon_level").value) || 1;
+      mon.is_shiny = document.getElementById("mon_shiny").checked;
+      mon.nature = document.getElementById("mon_nature").value;
+      mon.tera_type = document.getElementById("mon_tera").value;
+      mon.held_item_name = document.getElementById("mon_item").value;
+      mon.pokeball_name = document.getElementById("mon_ball").value;
+
+      mon.moves = [];
+      for (let i = 0; i < 4; i++) {
+        mon.moves.push({
+          name: document.getElementById(`mon_move_${i}`).value,
+          pp: parseInt(document.getElementById(`mon_pp_${i}`).value) || 0
+        });
+      }
+
+      try {
+        let endpoint = "/api/update-mon";
+        let bodyPayload = { slot: selectedPartySlot, mon };
+
+        if (currentStorageMode === 'boxes') {
+          endpoint = "/api/update-box-mon";
+          bodyPayload = { box: currentBoxIndex, slot: selectedBoxSlot, mon };
+        }
+
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: jsonBody(bodyPayload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (data.mon) {
+            if (currentStorageMode === 'party') {
+              appData.party[selectedPartySlot] = data.mon;
+              renderPartySlots();
+              populateMonEditor(data.mon, `Party Slot #${selectedPartySlot + 1}`);
+            } else {
+              currentBoxMons[selectedBoxSlot] = data.mon;
+              renderBoxSlots();
+              const bName = (appData && appData.storage && appData.storage.box_names && appData.storage.box_names[currentBoxIndex]) || `Box ${currentBoxIndex + 1}`;
+              populateMonEditor(data.mon, `${bName} Slot #${selectedBoxSlot + 1}`);
+            }
+          }
+          if (notify) {
+            showToast(data.message || "Pokémon saved successfully!");
+          }
+        } else {
+          showToast("⚠️ " + (data.error || "Failed to update Pokémon"));
+        }
+      } catch (err) {
+        console.error("Save error:", err);
+        showToast("⚠️ Network/Server error updating Pokémon");
+      }
+    }
+
+    async function updateTrainer() {
+      const body = {
+        name: document.getElementById("tr_name").value,
+        gender: document.getElementById("tr_gender").value,
+        tid: document.getElementById("tr_tid").value,
+        sid: document.getElementById("tr_sid").value,
+        money: document.getElementById("tr_money").value,
+        coins: document.getElementById("tr_coins").value,
+        hours: document.getElementById("tr_hours").value,
+        minutes: document.getElementById("tr_mins").value,
+        seconds: document.getElementById("tr_secs").value,
+      };
+
+      await fetch("/api/update-trainer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: jsonBody(body)
+      });
+      showToast("Trainer details updated!");
+    }
+
+    // Bag Logic
+    function renderPocketSelector() {
+      const cont = document.getElementById("pocketSelector");
+      cont.innerHTML = "";
+      appData.metadata.pockets.forEach(p => {
+        const btn = document.createElement("button");
+        btn.className = `pocket-btn ${p === currentPocket ? 'active' : ''}`;
+        btn.textContent = p;
+        btn.onclick = () => {
+          currentPocket = p;
+          renderPocketSelector();
+          renderBagTable();
+        };
+        cont.appendChild(btn);
+      });
+    }
+
+    function renderBagTable() {
+      const tb = document.getElementById("bagTableBody");
+      tb.innerHTML = "";
+      const items = appData.bag[currentPocket] || [];
+
+      items.forEach((it, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${it.name}</td>
+          <td><input type="number" class="qty-input" value="${it.qty}" min="1" max="999" onchange="onBagQtyChange(${idx}, this.value)"></td>
+          <td><button class="btn btn-secondary" style="padding:2px 8px; font-size:11px;" onclick="deleteBagItem(${idx})">✕ Delete</button></td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
+
+    async function onBagQtyChange(idx, val) {
+      appData.bag[currentPocket][idx].qty = parseInt(val) || 1;
+      await syncBag();
+    }
+
+    async function deleteBagItem(idx) {
+      appData.bag[currentPocket].splice(idx, 1);
+      renderBagTable();
+      await syncBag();
+    }
+
+    async function addBagItem() {
+      const item_name = document.getElementById("bagAddItemSelect").value;
+      const qty = parseInt(document.getElementById("bagAddItemQty").value) || 1;
+      const item_id = appData.metadata.items.find(i => i.name === item_name)?.id;
+
+      if (!item_id) return;
+      const list = appData.bag[currentPocket];
+      const existing = list.find(i => i.id === item_id);
+      if (existing) {
+        existing.qty = Math.min(999, existing.qty + qty);
+      } else {
+        list.push({ id: item_id, name: item_name, qty });
+      }
+      renderBagTable();
+      await syncBag();
+      showToast(`Added ${item_name} x${qty}!`);
+    }
+
+    async function giveItemPreset(itemName, qty) {
+      const item = appData.metadata.items.find(i => i.name === itemName);
+      if (!item) return;
+      let targetPocket = "Items";
+      if (itemName.includes("Ball")) targetPocket = "PokeBalls";
+      else if (itemName.includes("Candy") || itemName.includes("Revive")) targetPocket = "Medicine";
+
+      const list = appData.bag[targetPocket];
+      const ex = list.find(i => i.id === item.id);
+      if (ex) ex.qty = Math.min(999, ex.qty + qty);
+      else list.push({ id: item.id, name: itemName, qty });
+
+      currentPocket = targetPocket;
+      renderPocketSelector();
+      renderBagTable();
+      await syncBag();
+      showToast(`Preset: Added ${itemName} x${qty}!`);
+    }
+
+    async function syncBag() {
+      await fetch("/api/update-bag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: jsonBody({
+          pocket: currentPocket,
+          items: appData.bag[currentPocket]
+        })
+      });
+    }
+
+    async function quickAction(endpoint) {
+      const res = await fetch(endpoint, { method: "POST" });
+      const data = await res.json();
+      showToast(data.message);
+      await loadData();
+    }
+
+    async function saveToDisk() {
+      const res = await fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Saved to disk! (Backup created)");
+      } else {
+        alert("Error saving: " + data.error);
+      }
+    }
+
+    function downloadSave() {
+      window.location.href = "/api/download";
+    }
+
+    async function cloneToV113() {
+      const res = await fetch("/api/clone-to-v113", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message);
+        await fetchStatus();
+        await loadData();
+      } else {
+        alert("Error: " + data.error);
+      }
+    }
+
+    async function onSelectSave(path) {
+      const res = await fetch("/api/load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: jsonBody({ path })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Loaded ${data.filename}!`);
+        await fetchStatus();
+        await loadData();
+      } else {
+        alert("Error loading save: " + data.error);
+      }
+    }
+
+    function handleImportFile(file) {
+      if (!file) return;
+      showToast(`Importing ${file.name}...`);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const rawBytes = e.target.result;
+        try {
+          const res = await fetch(`/api/upload?name=${encodeURIComponent(file.name)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: rawBytes
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(`Imported ${data.filename} successfully!`);
+            await fetchStatus();
+            await loadData();
+            showTab('party');
+          } else {
+            alert("Import failed: " + data.error);
+          }
+        } catch (err) {
+          alert("Import error: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function jsonBody(obj) { return JSON.stringify(obj); }
+
+    // Init
+    window.addEventListener("DOMContentLoaded", async () => {
+      await fetchStatus();
+      await loadData();
+
+      // Drag & drop on drop zone
+      const dz = document.getElementById("dropZone");
+      if (dz) {
+        dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("dragover"); });
+        dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+        dz.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dz.classList.remove("dragover");
+          if (e.dataTransfer.files.length > 0) {
+            handleImportFile(e.dataTransfer.files[0]);
+          }
+        });
+      }
+
+      // Also allow dropping a .sav anywhere on the window!
+      window.addEventListener("dragover", (e) => { e.preventDefault(); });
+      window.addEventListener("drop", (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length > 0 && e.dataTransfer.files[0].name.endsWith(".sav")) {
+          handleImportFile(e.dataTransfer.files[0]);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

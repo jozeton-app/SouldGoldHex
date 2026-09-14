@@ -1,0 +1,1 @@
+# Pokémon SoulGold Save Editor uses standard library only!
