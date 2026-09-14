@@ -603,6 +603,9 @@
       <button class="btn btn-secondary" onclick="document.getElementById('headerImportInput').click()" title="Import any .sav file from your computer">
         📁 Import Save...
       </button>
+      <button id="resetImportBtn" class="btn btn-secondary" onclick="resetImportedSave()" style="display:none; color:#f87171; border-color:rgba(248,113,113,0.3);" title="Delete imported save and return to default game save">
+        🗑️ Reset Save
+      </button>
       <input type="file" id="headerImportInput" accept=".sav" style="display:none;" onchange="handleImportFile(this.files[0])">
     </div>
 
@@ -714,7 +717,10 @@
       </div>
 
       <div class="card" id="monEditorCard">
-        <div class="card-title" id="monEditorTitle">Editing Slot #1</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div class="card-title" id="monEditorTitle" style="margin-bottom:0;">Editing Slot #1</div>
+          <img id="monEditorSpritePreview" src="" alt="Preview" style="width:54px; height:54px; object-fit:contain; display:none; filter:drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+        </div>
         <div class="mon-editor-layout">
           <div>
             <div class="form-grid" style="margin-bottom:16px;">
@@ -843,6 +849,17 @@
 
     <!-- Tab 4: Save Files & Import -->
     <div id="tab-migration" class="tab-content">
+      <div class="card" id="importedSaveCard" style="display:none; border-color: rgba(248,113,113,0.3); background: rgba(239,68,68,0.04);">
+        <div class="card-title" style="color:#f87171;">Currently Viewing Imported Save</div>
+        <p style="font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
+          You are currently editing an imported save file: <strong id="importedSaveLabel" style="color:#fff;"></strong>.<br>
+          Click below to delete / unload this imported file and return to your default game save.
+        </p>
+        <button class="btn btn-secondary" onclick="resetImportedSave()" style="color:#f87171; border-color:rgba(248,113,113,0.4);">
+          🗑️ Delete / Unload Imported Save
+        </button>
+      </div>
+
       <div class="card">
         <div class="card-title">Import & Edit Any Save File</div>
         <p style="font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:16px;">
@@ -915,12 +932,24 @@
         sel.appendChild(opt);
       });
 
-      if (!found && data.current_save.filename) {
+      const isImported = (!found && !!data.current_save.filename) || (data.current_save.path && data.current_save.path.includes("/tmp"));
+      if (isImported && !found && data.current_save.filename) {
         const opt = document.createElement("option");
         opt.value = data.current_save.path;
         opt.textContent = `📁 [Imported]: ${data.current_save.filename}`;
         opt.selected = true;
         sel.insertBefore(opt, sel.firstChild);
+      }
+
+      const resetBtn = document.getElementById("resetImportBtn");
+      if (resetBtn) {
+        resetBtn.style.display = isImported ? "inline-flex" : "none";
+      }
+      const importedCard = document.getElementById("importedSaveCard");
+      if (importedCard) {
+        importedCard.style.display = isImported ? "block" : "none";
+        const labelEl = document.getElementById("importedSaveLabel");
+        if (labelEl) labelEl.textContent = data.current_save.filename || "Imported Save";
       }
 
       document.getElementById("versionBadge").textContent = data.current_save.version || "SoulGold";
@@ -1081,14 +1110,58 @@
       });
     }
 
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function getShowdownId(name) {
+      if (!name) return "substitute";
+      let s = name.toLowerCase().trim();
+      s = s.replace(/\s+galar(ian)?/g, "-galar");
+      s = s.replace(/\s+alola(n)?/g, "-alola");
+      s = s.replace(/\s+hisui(an)?/g, "-hisui");
+      s = s.replace(/\s+paldea(n)?/g, "-paldea");
+      s = s.replace(/\s+mega\s+y/g, "-megay");
+      s = s.replace(/\s+mega\s+x/g, "-megax");
+      s = s.replace(/\s+mega/g, "-mega");
+      s = s.replace(/♀/g, "f").replace(/♂/g, "m");
+      s = s.replace(/[^a-z0-9-]/g, "");
+      s = s.replace(/^-+|-+$/g, "");
+      return s || "substitute";
+    }
+
     function getSpriteUrl(speciesName, isShiny) {
-      const clean = speciesName.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const shinyPrefix = isShiny ? "shiny/" : "";
-      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${shinyPrefix}${getSpeciesId(speciesName)}.png`;
+      const clean = getShowdownId(speciesName);
+      const folder = isShiny ? "gen5-shiny" : "gen5";
+      return `https://play.pokemonshowdown.com/sprites/${folder}/${clean}.png`;
+    }
+
+    function handleSpriteError(img, speciesName, isShiny) {
+      const clean = getShowdownId(speciesName);
+      const step = parseInt(img.dataset.fallbackStep || "0", 10);
+      if (step === 0) {
+        img.dataset.fallbackStep = "1";
+        img.src = `https://play.pokemonshowdown.com/sprites/dex/${clean}.png`;
+      } else if (step === 1) {
+        img.dataset.fallbackStep = "2";
+        const id = getSpeciesId(speciesName);
+        const shinyPrefix = isShiny ? "shiny/" : "";
+        img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${shinyPrefix}${id}.png`;
+      } else {
+        img.onerror = null;
+        img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+      }
     }
 
     function getSpeciesId(name) {
-      const match = appData.metadata.species.find(s => s.name.toLowerCase() === name.toLowerCase());
+      if (!appData || !appData.metadata || !appData.metadata.species) return 1;
+      const match = appData.metadata.species.find(s => s.name.toLowerCase() === (name || "").toLowerCase());
       return match ? match.id : 1;
     }
 
@@ -1104,13 +1177,14 @@
 
         const hpPct = mon.max_hp > 0 ? Math.min(100, Math.round((mon.hp / mon.max_hp) * 100)) : 100;
         const spriteUrl = getSpriteUrl(mon.species_name, mon.is_shiny);
+        const safeName = (mon.species_name || "").replace(/'/g, "\\'");
 
         card.innerHTML = `
           <span class="party-card-slot">#${idx + 1}</span>
           ${mon.is_shiny ? '<span class="party-card-shiny">★</span>' : ''}
-          <img class="party-card-sprite" src="${spriteUrl}" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'" alt="${mon.species_name}">
-          <div class="party-card-name">${mon.nickname || mon.species_name}</div>
-          <div class="party-card-lvl">Lv. ${mon.level} • ${mon.species_name}</div>
+          <img class="party-card-sprite" src="${spriteUrl}" data-fallback-step="0" onerror="handleSpriteError(this, '${safeName}', ${!!mon.is_shiny})" alt="${escapeHtml(mon.species_name)}">
+          <div class="party-card-name">${escapeHtml(mon.nickname || mon.species_name)}</div>
+          <div class="party-card-lvl">Lv. ${mon.level} • ${escapeHtml(mon.species_name)}</div>
           <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${hpPct}%"></div></div>
         `;
         cont.appendChild(card);
@@ -1133,11 +1207,12 @@
 
         if (isOccupied) {
           const spriteUrl = getSpriteUrl(mon.species_name, mon.is_shiny);
+          const safeName = (mon.species_name || "").replace(/'/g, "\\'");
           card.innerHTML = `
             <span class="box-slot-num">#${s + 1}</span>
             ${mon.is_shiny ? '<span class="box-slot-shiny">★</span>' : ''}
-            <img class="box-slot-sprite" src="${spriteUrl}" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'" alt="${mon.species_name}">
-            <div class="box-slot-name">${mon.nickname || mon.species_name}</div>
+            <img class="box-slot-sprite" src="${spriteUrl}" data-fallback-step="0" onerror="handleSpriteError(this, '${safeName}', ${!!mon.is_shiny})" alt="${escapeHtml(mon.species_name)}">
+            <div class="box-slot-name">${escapeHtml(mon.nickname || mon.species_name)}</div>
             <div class="box-slot-lvl">Lv. ${mon.level}</div>
           `;
         } else {
@@ -1208,6 +1283,20 @@
 
       const titleName = (mon.species_id > 0) ? (mon.nickname || mon.species_name) : "(Empty Slot)";
       document.getElementById("monEditorTitle").textContent = `Editing ${label}: ${titleName}`;
+
+      const spritePrev = document.getElementById("monEditorSpritePreview");
+      if (spritePrev) {
+        if (mon && (mon.species_id > 0 || (mon.species_name && mon.species_name !== "None"))) {
+          spritePrev.style.display = "block";
+          spritePrev.dataset.fallbackStep = "0";
+          spritePrev.src = getSpriteUrl(mon.species_name, mon.is_shiny);
+          const safeName = (mon.species_name || "").replace(/'/g, "\\'");
+          spritePrev.onerror = function() { handleSpriteError(this, safeName, !!mon.is_shiny); };
+        } else {
+          spritePrev.style.display = "none";
+        }
+      }
+
       document.getElementById("mon_species").value = mon.species_name || "Bulbasaur";
       document.getElementById("mon_nickname").value = mon.nickname || "";
       document.getElementById("mon_level").value = mon.level || 5;
@@ -1298,6 +1387,20 @@
       mon.nickname = document.getElementById("mon_nickname").value;
       mon.level = parseInt(document.getElementById("mon_level").value) || 1;
       mon.is_shiny = document.getElementById("mon_shiny").checked;
+
+      const spritePrev = document.getElementById("monEditorSpritePreview");
+      if (spritePrev) {
+        if (mon.species_name && mon.species_name !== "None") {
+          spritePrev.style.display = "block";
+          spritePrev.dataset.fallbackStep = "0";
+          spritePrev.src = getSpriteUrl(mon.species_name, mon.is_shiny);
+          const safeName = (mon.species_name || "").replace(/'/g, "\\'");
+          spritePrev.onerror = function() { handleSpriteError(this, safeName, !!mon.is_shiny); };
+        } else {
+          spritePrev.style.display = "none";
+        }
+      }
+
       mon.nature = document.getElementById("mon_nature").value;
       mon.tera_type = document.getElementById("mon_tera").value;
       mon.held_item_name = document.getElementById("mon_item").value;
@@ -1494,6 +1597,23 @@
         await loadData();
       } else {
         alert("Error: " + data.error);
+      }
+    }
+
+    async function resetImportedSave() {
+      if (!confirm("Are you sure you want to unload the imported save and return to your default SoulGold save file?")) return;
+      try {
+        const res = await fetch("/api/reset", { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || "Reset to default game save!");
+          await fetchStatus();
+          await loadData();
+        } else {
+          alert("Reset failed: " + (data.error || "Unknown error"));
+        }
+      } catch (err) {
+        alert("Reset error: " + err.message);
       }
     }
 

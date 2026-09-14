@@ -191,6 +191,31 @@ class TestSoulGoldWebServer(unittest.TestCase):
         swap_res = json.loads(swap_resp.read().decode("utf-8"))
         self.assertTrue(swap_res.get("success"))
 
+    def test_10_api_reset_save(self):
+        # 1. Upload a 128KB dummy save
+        dummy_save = bytearray(131072)
+        upload_url = f"http://127.0.0.1:{TEST_PORT}/api/upload?name=temporary_imported.sav"
+        req = urllib.request.Request(upload_url, data=dummy_save, headers={"Content-Type": "application/octet-stream"}, method="POST")
+        resp = urllib.request.urlopen(req)
+        self.assertEqual(resp.status, 200)
+        upload_data = json.loads(resp.read().decode("utf-8"))
+        self.assertEqual(upload_data.get("filename"), "temporary_imported.sav")
+
+        # 2. Reset back to default
+        reset_url = f"http://127.0.0.1:{TEST_PORT}/api/reset"
+        reset_req = urllib.request.Request(reset_url, data=b"{}", headers={"Content-Type": "application/json"}, method="POST")
+        reset_resp = urllib.request.urlopen(reset_req)
+        self.assertEqual(reset_resp.status, 200)
+        reset_data = json.loads(reset_resp.read().decode("utf-8"))
+        self.assertTrue(reset_data.get("success"))
+        self.assertIn("Reset to default", reset_data.get("message"))
+
+        # 3. Status should show default save again
+        status_url = f"http://127.0.0.1:{TEST_PORT}/api/status"
+        status_resp = urllib.request.urlopen(status_url)
+        status_data = json.loads(status_resp.read().decode("utf-8"))
+        self.assertNotEqual(status_data["current_save"]["filename"], "temporary_imported.sav")
+
 if __name__ == "__main__":
     unittest.main()
 

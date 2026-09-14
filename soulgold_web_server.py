@@ -40,9 +40,9 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 CURRENT_SAVE: SoulGoldSave = None
 SESSIONS: Dict[str, SoulGoldSave] = {}
 
-def get_or_load_default_save() -> SoulGoldSave:
+def get_or_load_default_save(force_reload: bool = False) -> SoulGoldSave:
     global CURRENT_SAVE
-    if CURRENT_SAVE is not None:
+    if CURRENT_SAVE is not None and not force_reload:
         return CURRENT_SAVE
     
     saves = get_available_saves()
@@ -422,6 +422,26 @@ class SoulGoldRequestHandler(BaseHTTPRequestHandler):
                 })
             except Exception as e:
                 self.send_json({"error": str(e)}, status=500)
+            return
+
+        if path in ("/api/reset", "/api/reset-save", "/api/delete-imported"):
+            sess_id = self.get_session_id()
+            if sess_id in SESSIONS:
+                old_sav = SESSIONS.pop(sess_id)
+                if old_sav.filepath and "/tmp" in old_sav.filepath and os.path.exists(old_sav.filepath):
+                    try:
+                        os.remove(old_sav.filepath)
+                    except Exception:
+                        pass
+            CURRENT_SAVE = get_or_load_default_save(force_reload=True)
+            self.send_json({
+                "success": True,
+                "message": "Reset to default game save file!",
+                "filename": os.path.basename(CURRENT_SAVE.filepath) if CURRENT_SAVE.filepath else "Untitled",
+                "filepath": CURRENT_SAVE.filepath,
+                "version": CURRENT_SAVE.detect_version(),
+                "is_blank_flash": CURRENT_SAVE.is_blank_flash
+            })
             return
 
         save = get_or_load_default_save()
