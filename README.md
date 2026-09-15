@@ -3,7 +3,7 @@
 A powerful, modern save editor for **Pokémon SoulGold** (GBA ROM hack v1.1 & v1.1.3) built with pure Python and a sleek browser interface.
 
 #LINK:
-souldgoldhx.com
+http://souldgoldhx.com
 
 ![UI Preview](soulgold_icon.png)
 
